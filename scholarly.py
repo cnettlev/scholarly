@@ -17,6 +17,7 @@ import re
 import requests
 import sys
 import time
+import unidecode
 
 _GOOGLEID = hashlib.md5(str(random.random()).encode('utf-8')).hexdigest()[:16]
 _COOKIES = {'GSP': 'ID={0}:CF=4'.format(_GOOGLEID)}
@@ -70,7 +71,7 @@ def _handle_captcha(url):
 def _get_page(pagerequest):
     """Return the data for a page on scholar.google.com"""
     # Note that we include a sleep to avoid overloading the scholar server
-    time.sleep(5+random.uniform(0, 5))
+    time.sleep(.5+random.uniform(0, .5))
     resp = _SESSION.get(pagerequest, headers=_HEADERS, cookies=_COOKIES)
     if resp.status_code == 200:
         return resp.text
@@ -97,6 +98,9 @@ def _search_scholar_soup(soup):
     """Generator that returns Publication objects from the search page"""
     while True:
         for row in soup.find_all('div', 'gs_r'):
+            # Small fix: leave out the first entry, which is the article being searched
+            if row.find('div', class_='gs_ri') is None:
+                continue
             yield Publication(row, 'scholar')
         if soup.find(class_='gs_ico gs_ico_nav_next'):
             url = soup.find(class_='gs_ico gs_ico_nav_next').parent['href']
@@ -144,7 +148,13 @@ class Publication(object):
             if title.find('a'):
                 self.bib['url'] = title.find('a')['href']
             authorinfo = databox.find('div', class_='gs_a')
-            self.bib['author'] = ' and '.join([i.strip() for i in authorinfo.text.split(' - ')[0].split(',')])
+            splittedAuthors = unidecode.unidecode(authorinfo.text).split(' - ')
+            self.bib['author'] = splittedAuthors[0]
+            if len(splittedAuthors) > 2:
+                self.bib['volume'] = splittedAuthors[1]
+            else:
+                self.bib['volume'] = ''
+            self.bib['publisher'] = splittedAuthors[-1]
             if databox.find('div', class_='gs_rs'):
                 self.bib['abstract'] = databox.find('div', class_='gs_rs').text
                 if self.bib['abstract'][0:8].lower() == 'abstract':
@@ -157,7 +167,7 @@ class Publication(object):
                     self.citedby = int(re.findall(r'\d+', link.text)[0])
                     self.id_scholarcitedby = re.findall(_SCHOLARPUBRE, link['href'])[0]
             if __data.find('div', class_='gs_ggs gs_fl'):
-                self.bib['eprint'] = __data.find('div', class_='gs_ggs gs_fl').a['href']
+                self.bib['eprint'] = _HOST + __data.find('div', class_='gs_ggs gs_fl').a['href']
         self._filled = False
 
     def fill(self):
@@ -192,7 +202,7 @@ class Publication(object):
                 elif key == 'Total citations':
                     self.id_scholarcitedby = re.findall(_SCHOLARPUBRE, val.a['href'])[0]
             if soup.find('div', class_='gsc_vcd_title_ggi'):
-                self.bib['eprint'] = soup.find('div', class_='gsc_vcd_title_ggi').a['href']
+                self.bib['eprint'] = _HOST + soup.find('div', class_='gsc_vcd_title_ggi').a['href']
             self._filled = True
         elif self.source == 'scholar':
             bibtex = _get_page(self.url_scholarbib)
