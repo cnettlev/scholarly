@@ -116,13 +116,13 @@ or ``pip`` to install from github:
 
 ::
 
-    pip install git+https://github.com/OrganicIrradiation/scholarly.git
+    pip install git+https://github.com/cnettlev/scholarly.git
 
 or clone the package using git:
 
 ::
 
-    git clone https://github.com/OrganicIrradiation/scholarly.git
+    git clone https://github.com/cnettlev/scholarly.git
 
 Requirements
 ------------
