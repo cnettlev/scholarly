@@ -128,6 +128,7 @@ class Publication(object):
     def __init__(self, __data, pubtype=None):
         self.bib = dict()
         self.source = pubtype
+        self.citedby = 0
         if self.source == 'citations':
             self.bib['title'] = __data.find('a', class_='gsc_a_at').text
             self.id_citations = re.findall(_CITATIONPUBRE, __data.find('a', class_='gsc_a_at')['data-href'])[0]
