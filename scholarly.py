@@ -246,12 +246,16 @@ class Author(object):
 
 
 class querier(object):
+    proxy = ''
+
     def _get_page(self,pagerequest):
         """Return the data for a page on scholar.google.com"""
         # Note that we include a sleep to avoid overloading the scholar server
         time.sleep(max((5,random.uniform(0, 5))))
         # resp = _SESSION.get(pagerequest, headers=_HEADERS, cookies=_COOKIES)
         req = Request(url=pagerequest, headers=_HEADERS)
+        if self.proxy:
+            req.set_proxy(self.proxy)
         hdl = self.opener.open(req)
 
         return hdl.read()
@@ -339,6 +343,12 @@ class querier(object):
             return True
         except Exception as msg:
             return False
+
+    def set_proxy(self,new_proxy):
+        self.proxy = new_proxy
+
+    def reset_proxy(self):
+        self.proxy = ''
 
     def __init__(self,cookie_file=''):
         self.cjar = MozillaCookieJar()
