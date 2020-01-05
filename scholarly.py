@@ -255,7 +255,10 @@ class querier(object):
         # resp = _SESSION.get(pagerequest, headers=_HEADERS, cookies=_COOKIES)
         req = Request(url=pagerequest, headers=_HEADERS)
         if self.proxy:
-            req.set_proxy(self.proxy)
+            if 'https:' in self.proxy:
+                req.set_proxy(self.proxy,'https')
+            else:
+                req.set_proxy(self.proxy,'http')
         hdl = self.opener.open(req)
 
         return hdl.read()
