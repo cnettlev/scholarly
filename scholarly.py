@@ -19,7 +19,7 @@ import sys
 import time
 import unidecode
 
-from urllib2 import Request, build_opener, HTTPCookieProcessor
+from urllib2 import Request, build_opener, HTTPCookieProcessor, urlopen
 from urllib import quote, unquote
 from cookielib import MozillaCookieJar
 from os.path import exists
@@ -246,7 +246,7 @@ class Author(object):
 
 
 class querier(object):
-    proxy = ''
+    proxy = None
 
     def _get_page(self,pagerequest):
         """Return the data for a page on scholar.google.com"""
@@ -255,11 +255,15 @@ class querier(object):
         # resp = _SESSION.get(pagerequest, headers=_HEADERS, cookies=_COOKIES)
         req = Request(url=pagerequest, headers=_HEADERS)
         if self.proxy:
-            if 'https:' in self.proxy:
-                req.set_proxy(self.proxy,'https')
-            else:
-                req.set_proxy(self.proxy,'http')
-        hdl = self.opener.open(req)
+            r = self.proxy.get(pagerequest, options = {})
+
+            while not r['body']:
+                # Error on request through the proxy
+                print("Error while communicating, trying again ...")
+                r = self.proxy.get(pagerequest, options = {})
+
+            return r['body']
+        hdl = urlopen(req)
 
         return hdl.read()
         # if html.status_code == 200:
@@ -347,11 +351,13 @@ class querier(object):
         except Exception as msg:
             return False
 
-    def set_proxy(self,new_proxy):
-        self.proxy = new_proxy
+    def set_proxy(self,token):
+        from proxycrawl import ProxyCrawlAPI
+
+        self.proxy = ProxyCrawlAPI({ 'token': token })
 
     def reset_proxy(self):
-        self.proxy = ''
+        self.proxy = None
 
     def __init__(self,cookie_file=''):
         self.cjar = MozillaCookieJar()
