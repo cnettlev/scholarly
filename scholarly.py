@@ -306,10 +306,17 @@ class querier(object):
             else:
                 break
 
-    def search_pubs_query(self,query):
+    def search_pubs_query(self,query,years=None):
         """Search by scholar query and return a generator of Publication objects"""
         url = _PUBSEARCH.format(requests.utils.quote(query.encode('utf8')))
+        if years is not None:
+            if isinstance(years,list):
+                url += '&as_ylo='+str(min(years))+'&as_yhi='+str(max(years))
+            if isinstance(years,int):
+                url += '&as_ylo='+str(years)+'&as_yhi='+str(years)
+
         soup = self._get_soup(_HOST+url)
+
         return self._search_scholar_soup(soup)
 
 
