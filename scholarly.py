@@ -103,9 +103,17 @@ class Publication(object):
             splittedAuthors = unidecode.unidecode(authorinfo.text).split(' - ')
             self.bib['author'] = splittedAuthors[0]
             if len(splittedAuthors) > 2:
+                year = splittedAuthors[1].split(', ')[-1]
+                vol = splittedAuthors[1].split(', ')[:-1]
+                if vol != year:
+                    self.bib['volume'] = splittedAuthors[1]
+                else:
+                    self.bib['volume'] = ''
+                self.bib['year'] = year
                 self.bib['volume'] = splittedAuthors[1]
             else:
                 self.bib['volume'] = ''
+                self.bib['year'] = ''
             self.bib['publisher'] = splittedAuthors[-1]
             if databox.find('div', class_='gs_rs'):
                 self.bib['abstract'] = databox.find('div', class_='gs_rs').text
@@ -162,7 +170,7 @@ class Publication(object):
             self._filled = True
         return self
 
-    def get_citedby(self):
+    def get_citedby(self,startAt=0):
         """Searches GScholar for other articles that cite this Publication and
         returns a Publication generator.
         """
@@ -170,6 +178,8 @@ class Publication(object):
             self.fill()
         if hasattr(self, 'id_scholarcitedby'):
             url = _SCHOLARPUB.format(requests.utils.quote(self.id_scholarcitedby))
+            if startAt>0:
+                url += '&start='+str(startAt)
             soup = self.querier._get_soup(_HOST+url)
             return self.querier._search_scholar_soup(soup)
         else:
